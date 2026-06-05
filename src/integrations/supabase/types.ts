@@ -14,7 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          id: string
+          line_items: Json
+          printify_order_id: string | null
+          shipping_address: Json
+          status: string
+          subtotal_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          id?: string
+          line_items: Json
+          printify_order_id?: string | null
+          shipping_address: Json
+          status?: string
+          subtotal_cents: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          id?: string
+          line_items?: Json
+          printify_order_id?: string | null
+          shipping_address?: Json
+          status?: string
+          subtotal_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          cached_at: string
+          created_at: string
+          description: string | null
+          id: string
+          images: Json
+          printify_id: string
+          tags: Json
+          title: string
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          cached_at?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json
+          printify_id: string
+          tags?: Json
+          title: string
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          cached_at?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json
+          printify_id?: string
+          tags?: Json
+          title?: string
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
