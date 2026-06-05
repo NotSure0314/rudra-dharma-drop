@@ -566,8 +566,7 @@ function CheckoutModal({
 }) {
   const submit = useServerFn(createOrder);
   const m = useMutation({
-    mutationFn: (payload: Parameters<typeof submit>[0]["data"]) =>
-      submit({ data: payload }),
+    mutationFn: (payload: any) => submit({ data: payload }),
   });
   const [form, setForm] = useState({
     email: "",
