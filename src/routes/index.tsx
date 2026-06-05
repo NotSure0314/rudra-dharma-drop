@@ -627,7 +627,7 @@ function CheckoutModal({
             <p className="font-display text-4xl text-amber mb-4">॥ ॐ ॥</p>
             <p className="text-bone">Your order has been received.</p>
             <p className="text-muted-foreground text-xs mt-2">
-              Order #{m.data?.orderId.slice(0, 8)}
+              Order #{((m.data as any)?.orderId ?? "").slice(0, 8)}
             </p>
           </div>
         ) : (
