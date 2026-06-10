@@ -300,7 +300,7 @@ function ProductCard({
   const img = product.images[0]?.src;
 
   return (
-    <article className="reveal group">
+    <article className="group">
       <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
         {img ? (
           <img
