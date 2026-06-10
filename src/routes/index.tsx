@@ -101,9 +101,10 @@ function RudraStorefront() {
   useReveal();
   const fetchProducts = useServerFn(getProducts);
   const { data, isLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["printify-products", "27806604"],
     queryFn: () => fetchProducts(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
   const products = data?.products ?? [];
 
@@ -269,8 +270,7 @@ function Collection({
               The forge is cooling.
             </p>
             <p className="text-sm">
-              No products are published in the Printify shop yet. Publish a product
-              to see it appear here.
+              No products were returned by the Printify API for this shop yet.
             </p>
           </div>
         )}
