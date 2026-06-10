@@ -1,9 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-
 const PRINTIFY_BASE = "https://api.printify.com/v1";
+const PRINTIFY_SHOP_ID = "27806604";
 
 async function printifyFetch(path: string, init?: RequestInit) {
   const key = process.env.PRINTIFY_API_KEY;
@@ -34,85 +33,33 @@ export type ProductDTO = {
 
 export const getProducts = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ products: ProductDTO[] }> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    // Try cache first
-    const { data: cached } = await supabaseAdmin
-      .from("products")
-      .select("*")
-      .order("updated_at", { ascending: false });
-
-    const fresh =
-      cached &&
-      cached.length > 0 &&
-      Date.now() - new Date(cached[0].cached_at).getTime() < CACHE_TTL_MS;
-
-    if (fresh) {
-      return {
-        products: cached.map((r: any) => ({
-          id: r.printify_id,
-          title: r.title,
-          description: r.description ?? "",
-          images: r.images,
-          variants: r.variants,
-        })),
-      };
-    }
-
-    // Refresh from Printify
-    const shopId = process.env.PRINTIFY_SHOP_ID;
-    if (!shopId) throw new Error("Printify shop not configured");
-    let products: ProductDTO[] = [];
     try {
-      const json = await printifyFetch(`/shops/${shopId}/products.json`);
+      const json = await printifyFetch(`/shops/${PRINTIFY_SHOP_ID}/products.json`);
       const list = Array.isArray(json?.data) ? json.data : [];
-      products = list.map((p: any) => ({
-        id: String(p.id),
-        title: p.title,
-        description: (p.description || "").replace(/<[^>]+>/g, "").trim(),
-        images: (p.images || []).map((i: any) => ({ src: i.src })),
-        variants: (p.variants || [])
-          .filter((v: any) => v.is_enabled)
+      const products = list.map((p: any) => {
+        const variants = (p.variants || [])
+          .filter((v: any) => v.is_enabled !== false)
           .map((v: any) => ({
             id: v.id,
             title: v.title,
             price: v.price,
-            is_enabled: v.is_enabled,
-          })),
-      }));
+            is_enabled: v.is_enabled !== false,
+          }));
+
+        return {
+          id: String(p.id),
+          title: p.title,
+          description: (p.description || "").replace(/<[^>]+>/g, "").trim(),
+          images: (p.images || []).map((i: any) => ({ src: i.src })).filter((i: { src?: string }) => Boolean(i.src)),
+          variants,
+        };
+      });
+
+      return { products };
     } catch (e) {
       console.error("Printify fetch failed", e);
-      // Fall back to stale cache if we have it
-      if (cached && cached.length > 0) {
-        return {
-          products: cached.map((r: any) => ({
-            id: r.printify_id,
-            title: r.title,
-            description: r.description ?? "",
-            images: r.images,
-            variants: r.variants,
-          })),
-        };
-      }
       return { products: [] };
     }
-
-    // Persist cache
-    if (products.length > 0) {
-      const rows = products.map((p) => ({
-        printify_id: p.id,
-        title: p.title,
-        description: p.description,
-        images: p.images,
-        variants: p.variants,
-        cached_at: new Date().toISOString(),
-      }));
-      await supabaseAdmin
-        .from("products")
-        .upsert(rows, { onConflict: "printify_id" });
-    }
-
-    return { products };
   }
 );
 
@@ -162,9 +109,8 @@ export const createOrder = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    const shopId = process.env.PRINTIFY_SHOP_ID;
     let printifyOrderId: string | null = null;
-    if (shopId) {
+    {
       try {
         const body = {
           external_id: row.id,
@@ -189,7 +135,7 @@ export const createOrder = createServerFn({ method: "POST" })
             zip: data.address.postal_code,
           },
         };
-        const res = await printifyFetch(`/shops/${shopId}/orders.json`, {
+        const res = await printifyFetch(`/shops/${PRINTIFY_SHOP_ID}/orders.json`, {
           method: "POST",
           body: JSON.stringify(body),
         });
