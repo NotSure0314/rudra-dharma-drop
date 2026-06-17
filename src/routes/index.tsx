@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getProducts,
-  createOrder,
   joinWaitlist,
   type ProductDTO,
 } from "@/lib/printify.functions";
+import { createCheckoutSession } from "@/lib/stripe.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -108,9 +108,8 @@ function RudraStorefront() {
   });
   const products = data?.products ?? [];
 
-  const { cart, add, remove, clear } = useCart();
+  const { cart, add, remove } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  const [checkout, setCheckout] = useState(false);
 
   const subtotal = useMemo(
     () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
@@ -133,22 +132,7 @@ function RudraStorefront() {
         cart={cart}
         subtotal={subtotal}
         onRemove={remove}
-        onCheckout={() => {
-          setCartOpen(false);
-          setCheckout(true);
-        }}
       />
-      {checkout && (
-        <CheckoutModal
-          cart={cart}
-          subtotal={subtotal}
-          onClose={() => setCheckout(false)}
-          onComplete={() => {
-            clear();
-            setCheckout(false);
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -487,15 +471,33 @@ function CartDrawer({
   cart,
   subtotal,
   onRemove,
-  onCheckout,
 }: {
   open: boolean;
   onClose: () => void;
   cart: CartItem[];
   subtotal: number;
   onRemove: (i: number) => void;
-  onCheckout: () => void;
 }) {
+  const startCheckout = useServerFn(createCheckoutSession);
+  const m = useMutation({
+    mutationFn: () =>
+      startCheckout({
+        data: {
+          items: cart.map((i) => ({
+            product_id: i.product_id,
+            variant_id: i.variant_id,
+            quantity: i.quantity,
+            title: i.title,
+            price: i.price,
+            image: i.image || "",
+          })),
+        },
+      }),
+    onSuccess: (res) => {
+      if (res?.url) window.location.href = res.url;
+    },
+  });
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[200] flex">
@@ -540,12 +542,20 @@ function CartDrawer({
             </span>
             <span className="text-bone">${(subtotal / 100).toFixed(2)}</span>
           </div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] text-center">
+            Shipping calculated by Printify · Tax at checkout
+          </p>
+          {m.isError && (
+            <p className="text-destructive text-xs">
+              {(m.error as Error)?.message ?? "Checkout failed"}
+            </p>
+          )}
           <button
-            disabled={cart.length === 0}
-            onClick={onCheckout}
+            disabled={cart.length === 0 || m.isPending}
+            onClick={() => m.mutate()}
             className="w-full bg-amber text-primary-foreground py-3 uppercase tracking-[0.3em] text-xs hover:bg-amber/90 disabled:opacity-30 transition-colors"
           >
-            Checkout
+            {m.isPending ? "Redirecting…" : "Checkout with Stripe"}
           </button>
         </div>
       </aside>
@@ -553,127 +563,3 @@ function CartDrawer({
   );
 }
 
-function CheckoutModal({
-  cart,
-  subtotal,
-  onClose,
-  onComplete,
-}: {
-  cart: CartItem[];
-  subtotal: number;
-  onClose: () => void;
-  onComplete: () => void;
-}) {
-  const submit = useServerFn(createOrder);
-  const m = useMutation({
-    mutationFn: (payload: any) => submit({ data: payload }),
-  });
-  const [form, setForm] = useState({
-    email: "",
-    name: "",
-    line1: "",
-    line2: "",
-    city: "",
-    region: "",
-    postal_code: "",
-    country: "US",
-    phone: "",
-  });
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    m.mutate(
-      {
-        email: form.email,
-        name: form.name,
-        address: {
-          line1: form.line1,
-          line2: form.line2,
-          city: form.city,
-          region: form.region,
-          postal_code: form.postal_code,
-          country: form.country,
-          phone: form.phone,
-        },
-        items: cart.map((i) => ({
-          product_id: i.product_id,
-          variant_id: i.variant_id,
-          quantity: i.quantity,
-          title: i.title,
-          price: i.price,
-        })),
-      },
-      { onSuccess: () => setTimeout(onComplete, 2400) }
-    );
-  };
-
-  return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-background/90 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-card border border-border max-w-lg w-full p-8 my-8">
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <p className="text-amber text-xs uppercase tracking-[0.3em] mb-2">
-              Final Rite
-            </p>
-            <h3 className="font-display text-2xl text-bone">Complete your offering</h3>
-          </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-bone">
-            ✕
-          </button>
-        </div>
-
-        {m.isSuccess ? (
-          <div className="text-center py-12">
-            <p className="font-display text-4xl text-amber mb-4">॥ ॐ ॥</p>
-            <p className="text-bone">Your order has been received.</p>
-            <p className="text-muted-foreground text-xs mt-2">
-              Order #{((m.data as any)?.orderId ?? "").slice(0, 8)}
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={onSubmit} className="space-y-3">
-            {[
-              ["name", "Name"],
-              ["email", "Email"],
-              ["line1", "Address"],
-              ["line2", "Address line 2 (optional)"],
-              ["city", "City"],
-              ["region", "State / Region"],
-              ["postal_code", "Postal code"],
-              ["country", "Country (2-letter)"],
-              ["phone", "Phone (optional)"],
-            ].map(([k, label]) => (
-              <input
-                key={k}
-                required={!["line2", "phone", "region"].includes(k)}
-                type={k === "email" ? "email" : "text"}
-                placeholder={label}
-                value={(form as any)[k]}
-                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-                className="w-full bg-input/40 border border-border focus:border-amber outline-none px-4 py-3 text-bone text-sm placeholder:text-muted-foreground"
-              />
-            ))}
-            <div className="flex justify-between text-sm pt-4 border-t border-border">
-              <span className="text-muted-foreground uppercase tracking-[0.2em]">
-                Total
-              </span>
-              <span className="text-bone">${(subtotal / 100).toFixed(2)}</span>
-            </div>
-            {m.isError && (
-              <p className="text-destructive text-xs">
-                {(m.error as Error)?.message ?? "Order failed"}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={m.isPending}
-              className="w-full bg-amber text-primary-foreground py-3 uppercase tracking-[0.3em] text-xs hover:bg-amber/90 disabled:opacity-50 transition-colors"
-            >
-              {m.isPending ? "Sealing..." : "Place Order"}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
