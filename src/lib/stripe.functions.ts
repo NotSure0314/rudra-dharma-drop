@@ -120,7 +120,7 @@ export const fulfillCheckout = createServerFn({ method: "POST" })
     }
 
     const customer = session.customer_details;
-    const shipping = (session as any).shipping_details ?? session.shipping_details;
+    const shipping = (session as any).shipping_details;
     const addr = shipping?.address ?? customer?.address;
     const email = customer?.email ?? "";
     const name = shipping?.name ?? customer?.name ?? "";
