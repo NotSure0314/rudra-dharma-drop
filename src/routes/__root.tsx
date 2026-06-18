@@ -77,18 +77,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Rudra" },
-      { name: "description", content: "Sacred Streetwear offers dark, Hindu-inspired apparel with dynamic Printify product integration." },
+      { title: "Lovable App" },
+      { name: "description", content: "Lovable Generated Project" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Rudra" },
-      { property: "og:description", content: "Sacred Streetwear offers dark, Hindu-inspired apparel with dynamic Printify product integration." },
+      { property: "og:title", content: "Lovable App" },
+      { property: "og:description", content: "Lovable Generated Project" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Rudra" },
-      { name: "twitter:description", content: "Sacred Streetwear offers dark, Hindu-inspired apparel with dynamic Printify product integration." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/28281130-e771-498e-ae8f-206ace3aab1b/id-preview-81a050fb--33b28f43-b9df-4f1c-8dc7-643991bf1714.lovable.app-1781666266112.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/28281130-e771-498e-ae8f-206ace3aab1b/id-preview-81a050fb--33b28f43-b9df-4f1c-8dc7-643991bf1714.lovable.app-1781666266112.png" },
     ],
     links: [
       {
