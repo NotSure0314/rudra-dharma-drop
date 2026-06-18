@@ -7,10 +7,7 @@
   },
   "main": "dist/server/server.js",
   "build": {
-    "command": "bun run build",
-    "upload": {
-      "main": "dist/server/server.js"
-    }
+    "command": "bun run build"
   },
   "compatibility_flags": [
     "nodejs_compat"
