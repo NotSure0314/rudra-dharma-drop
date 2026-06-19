@@ -31,6 +31,26 @@ export type ProductDTO = {
   variants: { id: number; title: string; price: number; is_enabled: boolean }[];
 };
 
+async function markPublished(productId: string, handle: string) {
+  // Clear Printify's "publishing" lock for custom/API stores.
+  try {
+    await printifyFetch(
+      `/shops/${PRINTIFY_SHOP_ID}/products/${productId}/publishing_succeeded.json`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          external: {
+            id: productId,
+            handle: `https://rudrastyle.lovable.app/#${handle}`,
+          },
+        }),
+      }
+    );
+  } catch (e) {
+    console.warn("publishing_succeeded failed", productId, e);
+  }
+}
+
 export const getProducts = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ products: ProductDTO[] }> => {
     try {
@@ -52,10 +72,17 @@ export const getProducts = createServerFn({ method: "GET" }).handler(
           description: (p.description || "").replace(/<[^>]+>/g, "").trim(),
           images: (p.images || []).map((i: any) => ({ src: i.src })).filter((i: { src?: string }) => Boolean(i.src)),
           variants,
+          _locked: Boolean(p?.is_locked),
         };
       });
 
-      return { products };
+      // Fire-and-forget: clear publishing badge on any locked products.
+      const locked = products.filter((p: any) => p._locked);
+      if (locked.length) {
+        Promise.all(locked.map((p: any) => markPublished(p.id, p.id))).catch(() => {});
+      }
+
+      return { products: products.map(({ _locked, ...rest }: any) => rest) };
     } catch (e) {
       console.error("Printify fetch failed", e);
       return { products: [] };
