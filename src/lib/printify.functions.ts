@@ -90,6 +90,34 @@ export const getProducts = createServerFn({ method: "GET" }).handler(
   }
 );
 
+export const getProductById = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }): Promise<{ product: ProductDTO | null }> => {
+    try {
+      const json = await printifyFetch(`/shops/${PRINTIFY_SHOP_ID}/products/${data.id}.json`);
+      const variants = (json.variants || [])
+        .filter((v: any) => v.is_enabled !== false)
+        .map((v: any) => ({
+          id: v.id,
+          title: v.title,
+          price: v.price,
+          is_enabled: v.is_enabled !== false,
+        }));
+      return {
+        product: {
+          id: String(json.id),
+          title: json.title,
+          description: (json.description || "").replace(/<[^>]+>/g, "").trim(),
+          images: (json.images || []).map((i: any) => ({ src: i.src })).filter((i: { src?: string }) => Boolean(i.src)),
+          variants,
+        },
+      };
+    } catch (e) {
+      console.error("Printify product fetch failed", e);
+      return { product: null };
+    }
+  });
+
 const orderSchema = z.object({
   email: z.string().email().max(255),
   name: z.string().min(1).max(120),
