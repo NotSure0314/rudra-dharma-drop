@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import {
   type ProductDTO,
 } from "@/lib/printify.functions";
 import { createCheckoutSession } from "@/lib/stripe.functions";
+import { useCart, type CartItem } from "@/hooks/use-cart";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,17 +38,6 @@ export const Route = createFileRoute("/")({
   component: RudraStorefront,
 });
 
-type CartItem = {
-  product_id: string;
-  variant_id: number;
-  quantity: number;
-  title: string;
-  price: number;
-  image: string;
-};
-
-const CART_KEY = "rudra_cart_v1";
-
 function useReveal() {
   useEffect(() => {
     const els = document.querySelectorAll(".reveal");
@@ -65,36 +55,6 @@ function useReveal() {
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
   }, []);
-}
-
-function useCart() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CART_KEY);
-      if (raw) setCart(JSON.parse(raw));
-    } catch {}
-  }, []);
-  useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  }, [cart]);
-  return {
-    cart,
-    add: (item: CartItem) =>
-      setCart((c) => {
-        const i = c.findIndex(
-          (x) => x.product_id === item.product_id && x.variant_id === item.variant_id
-        );
-        if (i >= 0) {
-          const next = [...c];
-          next[i] = { ...next[i], quantity: next[i].quantity + item.quantity };
-          return next;
-        }
-        return [...c, item];
-      }),
-    remove: (idx: number) => setCart((c) => c.filter((_, i) => i !== idx)),
-    clear: () => setCart([]),
-  };
 }
 
 function RudraStorefront() {
@@ -285,31 +245,33 @@ function ProductCard({
 
   return (
     <article className="group">
-      <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
-        {img ? (
-          <img
-            src={img}
-            alt={product.title}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-display text-3xl">
-            ॐ
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
-      </div>
-      <div className="mt-6 flex items-start justify-between gap-4">
-        <div>
-          <h3 className="font-display text-lg text-bone">{product.title}</h3>
-          {variant && (
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">
-              ${(variant.price / 100).toFixed(2)}
-            </p>
+      <Link to="/products/$productId" params={{ productId: product.id }}>
+        <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
+          {img ? (
+            <img
+              src={img}
+              alt={product.title}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-display text-3xl">
+              ॐ
+            </div>
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
         </div>
-      </div>
+        <div className="mt-6 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-display text-lg text-bone">{product.title}</h3>
+            {variant && (
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">
+                ${(variant.price / 100).toFixed(2)}
+              </p>
+            )}
+          </div>
+        </div>
+      </Link>
       {enabled.length > 1 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {enabled.slice(0, 6).map((v) => (
@@ -562,4 +524,3 @@ function CartDrawer({
     </div>
   );
 }
-
