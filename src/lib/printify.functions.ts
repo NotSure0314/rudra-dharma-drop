@@ -44,7 +44,7 @@ async function markPublished(productId: string, handle: string) {
             handle: `https://rudrastyle.lovable.app/products/${handle}`,
           },
         }),
-      }
+      },
     );
   } catch (e) {
     console.warn("publishing_succeeded failed", productId, e);
@@ -87,7 +87,7 @@ export const getProducts = createServerFn({ method: "GET" }).handler(
       console.error("Printify fetch failed", e);
       return { products: [] };
     }
-  }
+  },
 );
 
 export const getProductById = createServerFn({ method: "GET" })
@@ -141,7 +141,7 @@ const orderSchema = z.object({
         quantity: z.number().int().min(1).max(10),
         title: z.string().max(200),
         price: z.number().int().nonnegative(),
-      })
+      }),
     )
     .min(1)
     .max(20),
@@ -204,10 +204,7 @@ export const createOrder = createServerFn({ method: "POST" })
           .eq("id", row.id);
       } catch (e) {
         console.error("Printify order failed", e);
-        await supabaseAdmin
-          .from("orders")
-          .update({ status: "queued_local" })
-          .eq("id", row.id);
+        await supabaseAdmin.from("orders").update({ status: "queued_local" }).eq("id", row.id);
       }
     }
 
