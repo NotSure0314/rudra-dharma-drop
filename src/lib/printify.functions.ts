@@ -41,10 +41,10 @@ async function markPublished(productId: string, handle: string) {
         body: JSON.stringify({
           external: {
             id: productId,
-            handle: `https://rudrastyle.lovable.app/#${handle}`,
+            handle: `https://rudrastyle.lovable.app/products/${handle}`,
           },
         }),
-      }
+      },
     );
   } catch (e) {
     console.warn("publishing_succeeded failed", productId, e);
@@ -70,24 +70,24 @@ export const getProducts = createServerFn({ method: "GET" }).handler(
           id: String(p.id),
           title: p.title,
           description: (p.description || "").replace(/<[^>]+>/g, "").trim(),
-          images: (p.images || []).map((i: any) => ({ src: i.src })).filter((i: { src?: string }) => Boolean(i.src)),
+          images: (p.images || [])
+            .map((i: any) => ({ src: i.src }))
+            .filter((i: { src?: string }) => Boolean(i.src)),
           variants,
           _locked: Boolean(p?.is_locked),
         };
       });
 
-      // Fire-and-forget: clear publishing badge on any locked products.
-      const locked = products.filter((p: any) => p._locked);
-      if (locked.length) {
-        Promise.all(locked.map((p: any) => markPublished(p.id, p.id))).catch(() => {});
-      }
+      // Explicitly mark every product as published so newly-added products
+      // don't stay stuck in Printify's publishing state.
+      await Promise.allSettled(products.map((p: any) => markPublished(p.id, p.id)));
 
       return { products: products.map(({ _locked, ...rest }: any) => rest) };
     } catch (e) {
       console.error("Printify fetch failed", e);
       return { products: [] };
     }
-  }
+  },
 );
 
 export const getProductById = createServerFn({ method: "GET" })
@@ -103,12 +103,15 @@ export const getProductById = createServerFn({ method: "GET" })
           price: v.price,
           is_enabled: v.is_enabled !== false,
         }));
+      await markPublished(String(json.id), String(json.id));
       return {
         product: {
           id: String(json.id),
           title: json.title,
           description: (json.description || "").replace(/<[^>]+>/g, "").trim(),
-          images: (json.images || []).map((i: any) => ({ src: i.src })).filter((i: { src?: string }) => Boolean(i.src)),
+          images: (json.images || [])
+            .map((i: any) => ({ src: i.src }))
+            .filter((i: { src?: string }) => Boolean(i.src)),
           variants,
         },
       };
@@ -138,7 +141,7 @@ const orderSchema = z.object({
         quantity: z.number().int().min(1).max(10),
         title: z.string().max(200),
         price: z.number().int().nonnegative(),
-      })
+      }),
     )
     .min(1)
     .max(20),
@@ -201,10 +204,7 @@ export const createOrder = createServerFn({ method: "POST" })
           .eq("id", row.id);
       } catch (e) {
         console.error("Printify order failed", e);
-        await supabaseAdmin
-          .from("orders")
-          .update({ status: "queued_local" })
-          .eq("id", row.id);
+        await supabaseAdmin.from("orders").update({ status: "queued_local" }).eq("id", row.id);
       }
     }
 
