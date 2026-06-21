@@ -70,13 +70,16 @@ export const getProducts = createServerFn({ method: "GET" }).handler(
           id: String(p.id),
           title: p.title,
           description: (p.description || "").replace(/<[^>]+>/g, "").trim(),
-          images: (p.images || []).map((i: any) => ({ src: i.src })).filter((i: { src?: string }) => Boolean(i.src)),
+          images: (p.images || [])
+            .map((i: any) => ({ src: i.src }))
+            .filter((i: { src?: string }) => Boolean(i.src)),
           variants,
           _locked: Boolean(p?.is_locked),
         };
       });
 
-      // Explicitly mark every product as published so newly-added products don't stay stuck in Printify's publishing state.
+      // Explicitly mark every product as published so newly-added products
+      // don't stay stuck in Printify's publishing state.
       await Promise.allSettled(products.map((p: any) => markPublished(p.id, p.id)));
 
       return { products: products.map(({ _locked, ...rest }: any) => rest) };
@@ -106,7 +109,9 @@ export const getProductById = createServerFn({ method: "GET" })
           id: String(json.id),
           title: json.title,
           description: (json.description || "").replace(/<[^>]+>/g, "").trim(),
-          images: (json.images || []).map((i: any) => ({ src: i.src })).filter((i: { src?: string }) => Boolean(i.src)),
+          images: (json.images || [])
+            .map((i: any) => ({ src: i.src }))
+            .filter((i: { src?: string }) => Boolean(i.src)),
           variants,
         },
       };
