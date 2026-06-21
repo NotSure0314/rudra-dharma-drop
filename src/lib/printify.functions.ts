@@ -41,7 +41,7 @@ async function markPublished(productId: string, handle: string) {
         body: JSON.stringify({
           external: {
             id: productId,
-            handle: `https://rudrastyle.lovable.app/#${handle}`,
+            handle: `https://rudrastyle.lovable.app/products/${handle}`,
           },
         }),
       }
@@ -76,11 +76,8 @@ export const getProducts = createServerFn({ method: "GET" }).handler(
         };
       });
 
-      // Fire-and-forget: clear publishing badge on any locked products.
-      const locked = products.filter((p: any) => p._locked);
-      if (locked.length) {
-        Promise.all(locked.map((p: any) => markPublished(p.id, p.id))).catch(() => {});
-      }
+      // Explicitly mark every product as published so newly-added products don't stay stuck in Printify's publishing state.
+      await Promise.allSettled(products.map((p: any) => markPublished(p.id, p.id)));
 
       return { products: products.map(({ _locked, ...rest }: any) => rest) };
     } catch (e) {
@@ -103,6 +100,7 @@ export const getProductById = createServerFn({ method: "GET" })
           price: v.price,
           is_enabled: v.is_enabled !== false,
         }));
+      await markPublished(String(json.id), String(json.id));
       return {
         product: {
           id: String(json.id),
