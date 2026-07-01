@@ -1,0 +1,7 @@
+node_modules
+.output
+.vinxi
+.wrangler
+dist
+.env
+.env.local
