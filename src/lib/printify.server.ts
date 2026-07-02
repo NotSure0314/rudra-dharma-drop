@@ -76,7 +76,7 @@ export async function markPublished(productId: string, handle = productId) {
 export async function fetchPrintifyProducts() {
   const json = await printifyFetch(`/shops/${PRINTIFY_SHOP_ID}/products.json`);
   const list = Array.isArray(json?.data) ? json.data : [];
-  const products = list.map(normalizeProduct);
+  const products: ProductDTO[] = list.map((p: any) => normalizeProduct(p));
 
   await Promise.allSettled(products.map((p) => markPublished(p.id)));
 

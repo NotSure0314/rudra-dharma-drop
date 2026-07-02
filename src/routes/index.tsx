@@ -55,7 +55,7 @@ function useReveal() {
 
 function RudraStorefront() {
   useReveal();
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["printify-products", "27806604"],
     queryFn: async () => {
       const res = await fetch(`/api/public/printify-products?t=${Date.now()}`, {

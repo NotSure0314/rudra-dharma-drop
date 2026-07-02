@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SuccessRouteImport } from './routes/success'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsProductIdRouteImport } from './routes/products.$productId'
+import { Route as ApiPublicPrintifyProductsRouteImport } from './routes/api.public.printify-products'
 
 const SuccessRoute = SuccessRouteImport.update({
   id: '/success',
@@ -28,35 +29,58 @@ const ProductsProductIdRoute = ProductsProductIdRouteImport.update({
   path: '/products/$productId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPrintifyProductsRoute =
+  ApiPublicPrintifyProductsRouteImport.update({
+    id: '/api/public/printify-products',
+    path: '/api/public/printify-products',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/success': typeof SuccessRoute
   '/products/$productId': typeof ProductsProductIdRoute
+  '/api/public/printify-products': typeof ApiPublicPrintifyProductsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/success': typeof SuccessRoute
   '/products/$productId': typeof ProductsProductIdRoute
+  '/api/public/printify-products': typeof ApiPublicPrintifyProductsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/success': typeof SuccessRoute
   '/products/$productId': typeof ProductsProductIdRoute
+  '/api/public/printify-products': typeof ApiPublicPrintifyProductsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/success' | '/products/$productId'
+  fullPaths:
+    | '/'
+    | '/success'
+    | '/products/$productId'
+    | '/api/public/printify-products'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/success' | '/products/$productId'
-  id: '__root__' | '/' | '/success' | '/products/$productId'
+  to:
+    | '/'
+    | '/success'
+    | '/products/$productId'
+    | '/api/public/printify-products'
+  id:
+    | '__root__'
+    | '/'
+    | '/success'
+    | '/products/$productId'
+    | '/api/public/printify-products'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SuccessRoute: typeof SuccessRoute
   ProductsProductIdRoute: typeof ProductsProductIdRoute
+  ApiPublicPrintifyProductsRoute: typeof ApiPublicPrintifyProductsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +106,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/printify-products': {
+      id: '/api/public/printify-products'
+      path: '/api/public/printify-products'
+      fullPath: '/api/public/printify-products'
+      preLoaderRoute: typeof ApiPublicPrintifyProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,17 +120,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SuccessRoute: SuccessRoute,
   ProductsProductIdRoute: ProductsProductIdRoute,
+  ApiPublicPrintifyProductsRoute: ApiPublicPrintifyProductsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
