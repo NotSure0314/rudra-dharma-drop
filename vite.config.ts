@@ -15,17 +15,6 @@ export default defineConfig({
   vite: {
     build: {
       chunkSizeWarningLimit: 1000,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            tanstack: [
-              "@tanstack/react-router",
-              "@tanstack/react-start",
-              "@tanstack/react-query",
-            ],
-          },
-        },
-      },
     },
   },
 });
