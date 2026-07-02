@@ -18,7 +18,6 @@ export default defineConfig({
       rollupOptions: {
         output: {
           manualChunks: {
-            react: ["react", "react-dom"],
             tanstack: [
               "@tanstack/react-router",
               "@tanstack/react-start",
