@@ -12,4 +12,21 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ["react", "react-dom"],
+            tanstack: [
+              "@tanstack/react-router",
+              "@tanstack/react-start",
+              "@tanstack/react-query",
+            ],
+          },
+        },
+      },
+    },
+  },
 });
