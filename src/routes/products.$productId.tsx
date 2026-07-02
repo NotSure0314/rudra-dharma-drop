@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getProductById } from "@/lib/printify.functions";
+import type { ProductDTO } from "@/lib/printify.functions";
 import { useCart, type CartItem } from "@/hooks/use-cart";
 
 export const Route = createFileRoute("/products/$productId")({
@@ -17,10 +16,16 @@ export const Route = createFileRoute("/products/$productId")({
 
 function ProductDetailPage() {
   const { productId } = Route.useParams();
-  const fetchProduct = useServerFn(getProductById);
   const { data, isLoading } = useQuery({
     queryKey: ["product", productId],
-    queryFn: () => fetchProduct({ data: { id: productId } }),
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/public/printify-products?id=${encodeURIComponent(productId)}&t=${Date.now()}`,
+        { headers: { Accept: "application/json" } },
+      );
+      if (!res.ok) throw new Error("Product failed to load");
+      return (await res.json()) as { product: ProductDTO | null };
+    },
   });
   const product = data?.product;
 
