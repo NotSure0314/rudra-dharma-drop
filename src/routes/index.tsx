@@ -2,11 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  getProducts,
-  joinWaitlist,
-  type ProductDTO,
-} from "@/lib/printify.functions";
+import { joinWaitlist, type ProductDTO } from "@/lib/printify.functions";
 import { createCheckoutSession } from "@/lib/stripe.functions";
 import { useCart, type CartItem } from "@/hooks/use-cart";
 
@@ -59,10 +55,15 @@ function useReveal() {
 
 function RudraStorefront() {
   useReveal();
-  const fetchProducts = useServerFn(getProducts);
   const { data, isLoading } = useQuery({
     queryKey: ["printify-products", "27806604"],
-    queryFn: () => fetchProducts(),
+    queryFn: async () => {
+      const res = await fetch(`/api/public/printify-products?t=${Date.now()}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error("Products failed to load");
+      return (await res.json()) as { products: ProductDTO[] };
+    },
     staleTime: 0,
     refetchOnMount: "always",
   });
@@ -81,7 +82,7 @@ function RudraStorefront() {
       <Nav cartCount={cart.length} onCart={() => setCartOpen(true)} />
       <Hero />
       <Manifesto />
-      <Collection products={products} isLoading={isLoading} onAdd={add} />
+      <Collection products={products} isLoading={isLoading && products.length === 0} onAdd={add} />
       <Lore />
       <InnerCircle />
       <Footer />
@@ -219,7 +220,7 @@ function Collection({
           </div>
         )}
 
-        {!isLoading && products.length > 0 && (
+        {products.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {products.map((p) => (
               <ProductCard key={p.id} product={p} onAdd={onAdd} />
@@ -244,7 +245,7 @@ function ProductCard({
   const img = product.images[0]?.src;
 
   return (
-    <article className="group">
+    <article className="group" data-product-card>
       <Link to="/products/$productId" params={{ productId: product.id }}>
         <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
           {img ? (
